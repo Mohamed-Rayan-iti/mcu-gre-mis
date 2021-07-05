@@ -2,20 +2,26 @@ package com.example.mcu;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.EmailAuthProvider;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class new_password_Activity extends AppCompatActivity {
     EditText new_password, confirm_new_password;
     Button sava_new_password;
     ImageView iconBack;
+    private final FirebaseFirestore reference = FirebaseFirestore.getInstance();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,32 +71,32 @@ public class new_password_Activity extends AppCompatActivity {
             return;
         }
         // to update Password in firebase
-        updatePasswordWithFirebase(email, con_new_pass);
+        updatePassword(email, con_new_pass);
     }
 
-    private void updatePasswordWithFirebase(String email, String con_new_pass) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        // Get auth credentials from the user for re-authentication. The example below shows
-        // email and password credentials but there are multiple possible providers,
-        // such as GoogleAuthProvider or FacebookAuthProvider.
-        AuthCredential credential = EmailAuthProvider.getCredential(email, con_new_pass);
-        // Prompt the user to re-provide their sign-in credentials
-        assert user != null;
-        user.reauthenticate(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        user.updatePassword(con_new_pass).addOnCompleteListener(task1 -> {
-                            if (task1.isSuccessful()) {
-                                showAlert(getString(R.string.password_updated));
-                            } else {
-                                showAlert("Error password not updated");
-                            }
-                        });
-                    } else {
-                        showAlert("Error auth failed");
-                    }
-                });
-        showAlert("you wont to update pass: '" + con_new_pass + "', to this email: '" + email + "' ");
+    public void updatePassword(String email, String password) {
+
+        Query queryReference = reference.collection("Users").whereEqualTo("E_mail", email);
+
+        queryReference.get().addOnSuccessListener(queryDocumentSnapshots -> {
+
+            if (!queryDocumentSnapshots.isEmpty()) {
+                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+
+                    Log.e("document", doc.getId());
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("password", password);
+                    updates.put("confirm_password", password);
+
+                    reference.collection("Users").document(doc.getId()).update(updates).addOnSuccessListener(aVoid -> {
+
+                        Intent intent = new Intent(new_password_Activity.this, password_success_Activity.class);
+                        startActivity(intent);
+
+                    }).addOnFailureListener(e -> Log.e("failure", e.toString()));
+                }
+            }
+        });
     }
 
     void showAlert(String msg) {
