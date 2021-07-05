@@ -36,6 +36,7 @@ public class new_password_Activity extends AppCompatActivity {
         iconBack.setOnClickListener(v -> {
             Intent intent = new Intent(this, login_Activity.class);
             startActivity(intent);
+            finish();
         });
     }
 
@@ -92,7 +93,7 @@ public class new_password_Activity extends AppCompatActivity {
 
                         Intent intent = new Intent(new_password_Activity.this, password_success_Activity.class);
                         startActivity(intent);
-
+                        finish();
                     }).addOnFailureListener(e -> Log.e("failure", e.toString()));
                 }
             }
